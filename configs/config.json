@@ -1,0 +1,22 @@
+{
+  "default": {
+    "frame_width": 1000,
+    "frame_height": 1000,
+    "isregistration": false
+  },
+  "DataAdministrator":{
+    "filepath_image_folder": "./data/photos/",
+    "filepath_embedding_data": "./data/data.pt",
+    "filepath_newuser_image": "./data/photos/",
+    "foldername_newuser": "newuser",
+    "the_number_of_frames": 500,
+    "interval_between_frames": 10000
+  },
+  "FaceAnalyst":{
+    "face_prob_threshold1": 0.93,
+    "face_prob_threshold2": 0.9,
+    "face_dist_threshold": 2,
+    "focal": 1.0,
+    "center_area_size_half": 130
+  }
+}
