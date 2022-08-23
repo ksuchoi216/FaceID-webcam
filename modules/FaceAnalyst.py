@@ -4,7 +4,7 @@ import sys
 from tabnanny import check
 from tkinter.tix import Y_REGION
 import torch
-from .ref_code.facenet_pytorch import MTCNN, InceptionResnetV1
+from .external_library import MTCNN, InceptionResnetV1
 from PIL import Image
 import numpy as np
 
@@ -14,8 +14,8 @@ from torchvision import transforms
 
 # head pose estimation
 import mediapipe as mp
-from .ref_code.HeadPoseEstimation.drawFace import draw
-from .ref_code.HeadPoseEstimation import reference_world as world
+from .external_library.head_pose_estimation.drawFace import draw
+from .external_library.head_pose_estimation import reference_world as world
 import dlib
 
 from .utils import printd, draw_center_border

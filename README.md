@@ -1,4 +1,14 @@
-# TEST
+# Installation
 
-테스트 실행은 test.ipynb을 통해 하실 수 있습니다.
-jupyter notebook을 실행하면 별도의 실시간 카메라 화면이 나와 테스트를 진행할 수 있습니다.
+## facenet
+git clone git@github.com:timesler/facenet-pytorch.git ./modules/external_library/facenet_pytorch/
+
+## head pose estimation
+git clone git@github.com:by-sabbir/HeadPoseEstimation.git ./modules/external_library/head_pose_estimation/
+
+### to download model
+cd ./modules/external_library/head_pose_estimation/models/
+bash downloader.sh
+
+## mediapipe
+git clone https://github.com/google/mediapipe.git 

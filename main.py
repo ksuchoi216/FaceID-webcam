@@ -4,7 +4,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 import argparse
-import os
+import os, sys
 
 # CUSTOM
 from modules import DataAdministrator, FaceAnalyst, FaceRegisterer, DecisionMaker
@@ -31,11 +31,12 @@ def main(config):
   dataAdministrator = DataAdministrator(config["DataAdministrator"])
 
   faceAnalyst = FaceAnalyst(config["FaceAnalyst"])
+  sys.exit()
 
   # Registerer
   faceRegisterer = FaceRegisterer()
 
-    # # DecisionMaker
+  # # DecisionMaker
   # decisionMaker = DecisionMaker()
 
   # # Object Tracking
@@ -44,6 +45,7 @@ def main(config):
 
   # VideoCapture
   # isregistration = captureFrames(args, dataAdministrator, faceAnalyst, faceRegisterer)
+  
   captureFrames(config["default"], dataAdministrator, faceAnalyst)
 
 def parse_args():
@@ -58,8 +60,6 @@ if __name__ == "__main__":
   path_config = "./configs/config.json"
   with open(path_config) as f:
     config = json.load(f)
-
-  config["default"]["center_area_size_half"] = config["FaceAnalyst"]["center_area_size_half"]
 
   args = parse_args()
   config["DataAdministrator"]["foldername_newuser"] = args.new_user_name
