@@ -13,38 +13,17 @@ from captureFrames import captureFrames
 
 
 def main(config):
-  '''
-  # Data 
-  dataAdministrator = DataAdministrator(args.filepath_image_folder, args.filepath_embedding_data )
-  dataLoader, idx_to_class = dataAdministrator.create_data_loader()
-  print("\ncompleted DataAdministrator")
-
-  # Face
-  faceAnalyst = FaceAnalyst(args.face_prob_threshold1, args.face_prob_threshold2, args.face_dist_threshold, args.focal)
-  print("\ncompleted FaceAnalyst")
-  data = faceAnalyst.detectFaceFromDataLoader(dataLoader, idx_to_class)
-  dataAdministrator.save_embedding_data(data)
-  dataAdministrator.load_embedding_data()
-  print("\nsaved and loaded embedding data")
-  '''
-
+  # dataAdmin
   dataAdministrator = DataAdministrator(config["DataAdministrator"])
+  dataLoader, idx_to_class = dataAdministrator.create_data_loader()
+  print(dataLoader, idx_to_class)
 
+  # faceAnalyst
   faceAnalyst = FaceAnalyst(config["FaceAnalyst"])
-  sys.exit()
-
-  # Registerer
-  faceRegisterer = FaceRegisterer()
-
-  # # DecisionMaker
-  # decisionMaker = DecisionMaker()
-
-  # # Object Tracking
-  # objectTracker = ObjectTracker()
-  # print("\ncompleted objectTracking")
-
-  # VideoCapture
-  # isregistration = captureFrames(args, dataAdministrator, faceAnalyst, faceRegisterer)
+  data = faceAnalyst.detectFaceFromDataLoader(dataLoader, idx_to_class)
+  
+  # loading embedding data
+  dataAdministrator.save_embedding_data(data)
   
   captureFrames(config["default"], dataAdministrator, faceAnalyst)
 

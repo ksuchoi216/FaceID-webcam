@@ -35,7 +35,8 @@ class DataAdministrator():
     return dataLoader, idx_to_class
   
   def save_embedding_data(self, data):
-    torch.save(data, self.filepath_embedding_data)
+    self.embedding_data = data
+    torch.save(self.embedding_data, self.filepath_embedding_data)
     print("saved embedding data in ", self.filepath_embedding_data)
 
   def get_embedding_data(self):

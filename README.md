@@ -9,6 +9,12 @@ git clone git@github.com:by-sabbir/HeadPoseEstimation.git ./modules/external_lib
 ### to download model
 cd ./modules/external_library/head_pose_estimation/models/
 bash downloader.sh
+cd ../../../..
 
 ## mediapipe
 git clone https://github.com/google/mediapipe.git 
+
+
+# package
+pip install mediapipe
+pip install dlib

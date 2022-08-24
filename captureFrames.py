@@ -39,10 +39,14 @@ def captureFrames(config, dataAdministrator, faceAnalyst, decisionMaker=None):
       vc.release()
       cv2.destroyWindow("mac")
       break
-
+    
+    ''' 
+    # the following code for registration
+    # wait key 't' for test
     if key == 116:
       saveFrame(frame)
 
+    # wait key 'r' for registration
     if key == 114:
       isregistration = True
       faceAnalyst.show_instruction(frame)
@@ -55,17 +59,9 @@ def captureFrames(config, dataAdministrator, faceAnalyst, decisionMaker=None):
       if iscenter is True:
         dataAdministrator.createNewDirectory()
         isregistration = dataAdministrator.saveFrameInFolder(org_frame)
-
-    # frame = faceAnalyst.detectFaces(frame, isregistration, embedding_data=dataAdministrator.get_embedding_data(), HeadPoseEstimation=True, FaceIdentification=True)
+    '''
     
-    # # object detection
-    # frame = objectTracker.detect_objects(frame)
-
-    # # FACE DETECTION
-    # detected_frame = faceAnalyst.match_faces(frame, dataAdministrator.get_embedding_data())
-    # if detected_frame is not None:
-    #   frame = detected_frame
-
+    frame = faceAnalyst.execute_face_application(frame, embedding_data=dataAdministrator.get_embedding_data(), HeadPoseEstimation=True, FaceIdentification=True)
 
     cv2.imshow("mac", frame)
   

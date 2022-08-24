@@ -13,10 +13,10 @@ import matplotlib.pyplot as plt
 from torchvision import transforms
 
 # head pose estimation
-import mediapipe as mp
-from .external_library.head_pose_estimation.drawFace import draw
-from .external_library.head_pose_estimation import reference_world as world
+from .external_library.HeadPoseEstimation.drawFace import draw
+from .external_library.HeadPoseEstimation import reference_world as world
 import dlib
+import mediapipe as mp
 
 from .utils import printd, draw_center_border
 
@@ -51,7 +51,7 @@ class FaceAnalyst():
     self.mp_drawing = mp.solutions.drawing_utils
     self.face_detection = self.mp_face_detection.FaceDetection(min_detection_confidence=0.5)
 
-    PREDICTOR_PATH = os.path.join("./modules/ref_code/HeadPoseEstimation/models/", "shape_predictor_68_face_landmarks.dat")
+    PREDICTOR_PATH = os.path.join("./modules/external_library/HeadPoseEstimation/models/", "shape_predictor_68_face_landmarks.dat")
     if not os.path.isfile(PREDICTOR_PATH):
       print("PREDICTOR_PATH: ", PREDICTOR_PATH)
       print("[ERROR] USE models/downloader.sh to download the predictor")
@@ -63,7 +63,6 @@ class FaceAnalyst():
     self.center_area_size_half = config["center_area_size_half"]
 
 
-  
   def estimateHeadPose(self, org_image, image, absx, absy, abswidth, absheight):
     img = org_image
     newrect = dlib.rectangle(absx,absy,abswidth,absheight)
