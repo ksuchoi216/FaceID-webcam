@@ -25,6 +25,7 @@ def main(config):
   # loading embedding data
   dataAdministrator.save_embedding_data(data)
   
+  sys.exit()
   captureFrames(config["default"], dataAdministrator, faceAnalyst)
 
 def parse_args():

@@ -4,6 +4,8 @@ import sys
 from tabnanny import check
 from tkinter.tix import Y_REGION
 import torch
+import torch.nn as nn
+from torch.nn import functional as F
 from .external_library import MTCNN, InceptionResnetV1
 from PIL import Image
 import numpy as np
@@ -28,15 +30,25 @@ def calculateSimilarity(A, B):
   return cos(A, B).item()
 
 class FaceAnalyst():
-  def __init__(self, config):
-    self.single_face_detector = MTCNN(image_size=240, margin=0, keep_all=False, min_face_size=40) # keep_all=False
-    self.multi_faces_detector = MTCNN(image_size=240, margin=0, keep_all=True, min_face_size=40) # keep_all=True
-    self.face_feature_extractor = InceptionResnetV1(pretrained='vggface2').eval() 
+  def __init__(self, cfg):
+    customed_pretrained_model = cfg["model"]["customed_pretrained_model"]
+    image_size_for_face_detector = cfg["model"]["image_size_for_face_detector"]
+    path_for_pretrained_model = cfg["model"]["path_for_pretrained_model"]
+    
+    self.single_face_detector = MTCNN(image_size=image_size_for_face_detector, margin=0, keep_all=False, min_face_size=40) # keep_all=False
+    self.multi_faces_detector = MTCNN(image_size=image_size_for_face_detector, margin=0, keep_all=True, min_face_size=40) # keep_all=True
+    self.face_feature_extractor = InceptionResnetV1(pretrained='vggface2')
     # self.object_detector = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
+    
+    if customed_pretrained_model is True:
+      self.face_feature_extractor.load_state_dict(torch.load(path_for_pretrained_model))
+      self.face_feature_extractor.classify = True
+      
+    self.face_feature_extractor.eval()
 
-    self.face_prob_threshold1 = config["face_prob_threshold1"]
-    self.face_prob_threshold2 = config["face_prob_threshold2"]
-    self.face_dist_threshold = config["face_dist_threshold"]
+    self.face_prob_threshold1 = cfg["face_prob_threshold1"]
+    self.face_prob_threshold2 = cfg["face_prob_threshold2"]
+    self.face_dist_threshold = cfg["face_dist_threshold"]
 
     self.transform = transforms.Compose([transforms.Resize((224,224)),
                                           transforms.ToTensor(),
@@ -46,7 +58,7 @@ class FaceAnalyst():
                                           ),]) 
 
     # head pose estimation
-    self.focal = config["focal"]
+    self.focal = cfg["focal"]
     self.mp_face_detection = mp.solutions.face_detection
     self.mp_drawing = mp.solutions.drawing_utils
     self.face_detection = self.mp_face_detection.FaceDetection(min_detection_confidence=0.5)
@@ -60,7 +72,7 @@ class FaceAnalyst():
     
     self.face3Dmodel = world.ref3DModel()
 
-    self.center_area_size_half = config["center_area_size_half"]
+    self.center_area_size_half = cfg["center_area_size_half"]
 
 
   def estimateHeadPose(self, org_image, image, absx, absy, abswidth, absheight):
@@ -144,35 +156,39 @@ class FaceAnalyst():
     embedding_list = embedding_data[0] 
     name_list = embedding_data[1]
 
-    # crop_image = torch.from_numpy(image[absy : absheight, absx: abswidth])
-    crop_image = org_image[absy : absheight, absx: abswidth]
-    crop_image = Image.fromarray(crop_image)
-    crop_image = self.transform(crop_image)
+    croped_face_image = org_image[absy : absheight, absx: abswidth]
+    croped_face_image = Image.fromarray(croped_face_image)
+    croped_face_image = self.transform(croped_face_image)
+    
+    face, prob = self.single_face_detector(croped_face_image)
 
-    emb =  self.face_feature_extractor(crop_image.unsqueeze(0).detach())
-    dist_list = []
+    if face is not None and prob > 0.92:
+      emb =  self.face_feature_extractor(face.unsqueeze(0))
+      print(f'emb: {emb.shape}')
+      
+      ''' method about calculation of distances between images
+      dist_list = []
+      for idx, emb_db in enumerate(embedding_list):
+        dist = calculateDistance(emb, emb_db)
+        dist_list.append(round(dist,4))
 
-    for idx, emb_db in enumerate(embedding_list):
-      dist = calculateDistance(emb, emb_db)
-      dist_list.append(round(dist,4))
+      # min_dist
+      min_dist = min(dist_list) # get minumum dist value
+      min_dist_idx = dist_list.index(min_dist) # get minumum dist index
+      min_name = name_list[min_dist_idx] # get matched_name corrosponding to minimum dist
 
-    # min_dist
-    min_dist = min(dist_list) # get minumum dist value
-    min_dist_idx = dist_list.index(min_dist) # get minumum dist index
-    min_name = name_list[min_dist_idx] # get matched_name corrosponding to minimum dist
+      if min_dist < self.face_dist_threshold:
+        print('='*100)
+        print('matched: ', min_name)
+        print('name_list: ',name_list)
+        print('dist_list: ',dist_list)
+        print('='*100)
 
-    if min_dist < self.face_dist_threshold:
-      print('='*100)
-      print('matched: ', min_name)
-      print('name_list: ',name_list)
-      print('dist_list: ',dist_list)
-      print('='*100)
-
-      text='['+min_name+'] '+str(round(min_dist,4))
-      image = cv2.putText(image, text, (absx, absy-40), cv2.FONT_HERSHEY_SIMPLEX, 
-                            1, (0,255,0),3, cv2.LINE_AA)
-
-    return image
+        text='['+min_name+'] '+str(round(min_dist,4))
+        image = cv2.putText(image, text, (absx, absy-40), cv2.FONT_HERSHEY_SIMPLEX, 
+                              1, (0,255,0),3, cv2.LINE_AA)
+      '''
+      return image
 
   def detectFaces(self, frame):
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -265,7 +281,6 @@ class FaceAnalyst():
         # FACE IDENTIFICATION
         if FaceIdentification and embedding_data is not None:
           image = self.identifyFace(embedding_data, org_image, image, absx, absy, abswidth, absheight)
-
     
     return image
 
