@@ -3,9 +3,7 @@ import cv2
 
 from modules.utils import draw_center_border, saveFrame
 
-
-# def captureFrames(args, dataAdministrator, faceAnalyst, faceRegisterer, decisionMaker=None, objectTracker=None):
-def captureFrames(config, dataAdministrator, faceAnalyst, decisionMaker=None):
+def captureFrames(config, dataAdministrator, faceAnalyst):
   print('\nstart video capturing')
 
   frame_width = config["frame_width"]

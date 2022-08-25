@@ -40,9 +40,9 @@ class FaceAnalyst():
     self.face_feature_extractor = InceptionResnetV1(pretrained='vggface2')
     # self.object_detector = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
     
-    if customed_pretrained_model is True:
-      self.face_feature_extractor.load_state_dict(torch.load(path_for_pretrained_model))
-      self.face_feature_extractor.classify = True
+    # if customed_pretrained_model is True:
+    #   self.face_feature_extractor.load_state_dict(torch.load(path_for_pretrained_model))
+    #   self.face_feature_extractor.classify = True
       
     self.face_feature_extractor.eval()
 
@@ -78,7 +78,7 @@ class FaceAnalyst():
   def estimateHeadPose(self, org_image, image, absx, absy, abswidth, absheight):
     img = org_image
     newrect = dlib.rectangle(absx,absy,abswidth,absheight)
-    cv2.rectangle(image, (absx, absy), (abswidth, absheight),(0, 255, 0), 2)
+    # cv2.rectangle(image, (absx, absy), (abswidth, absheight),(0, 255, 0), 2)
     shape = self.predictor(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), newrect)
 
     draw(image, shape)
@@ -117,12 +117,12 @@ class FaceAnalyst():
     # print("ThetaZ: ", z)
     # print('*' * 80)
 
-    if angles[1] < -15:
+    if angles[1] < -20:
         GAZE = "Looking: Left"
-    elif angles[1] > 15:
+    elif angles[1] > 20:
         GAZE = "Looking: Right"
     else:
-        GAZE = "Forward"
+        GAZE = " - "
 
     cv2.putText(image, str(round(angles[1],4)), (absx, absy-10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 80), 2)
     cv2.putText(image, GAZE, (absx, absheight+30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 80), 2)
@@ -156,39 +156,19 @@ class FaceAnalyst():
     embedding_list = embedding_data[0] 
     name_list = embedding_data[1]
 
-    croped_face_image = org_image[absy : absheight, absx: abswidth]
-    croped_face_image = Image.fromarray(croped_face_image)
-    croped_face_image = self.transform(croped_face_image)
+    cropped_face_image = org_image[absy : absheight, absx: abswidth]
+    cropped_face_image = Image.fromarray(cropped_face_image)
+    # cropped_face_image = self.transform(cropped_face_image)
     
-    face, prob = self.single_face_detector(croped_face_image)
-
+      
+    face, prob = self.single_face_detector(cropped_face_image, return_prob= True)
+    
+    # method about calculation of distances between images
     if face is not None and prob > 0.92:
       emb =  self.face_feature_extractor(face.unsqueeze(0))
       print(f'emb: {emb.shape}')
       
-      ''' method about calculation of distances between images
-      dist_list = []
-      for idx, emb_db in enumerate(embedding_list):
-        dist = calculateDistance(emb, emb_db)
-        dist_list.append(round(dist,4))
-
-      # min_dist
-      min_dist = min(dist_list) # get minumum dist value
-      min_dist_idx = dist_list.index(min_dist) # get minumum dist index
-      min_name = name_list[min_dist_idx] # get matched_name corrosponding to minimum dist
-
-      if min_dist < self.face_dist_threshold:
-        print('='*100)
-        print('matched: ', min_name)
-        print('name_list: ',name_list)
-        print('dist_list: ',dist_list)
-        print('='*100)
-
-        text='['+min_name+'] '+str(round(min_dist,4))
-        image = cv2.putText(image, text, (absx, absy-40), cv2.FONT_HERSHEY_SIMPLEX, 
-                              1, (0,255,0),3, cv2.LINE_AA)
-      '''
-      return image
+    return image
 
   def detectFaces(self, frame):
     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -205,23 +185,7 @@ class FaceAnalyst():
     frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
 
     return frame, results, h, w
-
-  def checkCenterOfFace(self, center_of_face, h, w):
-    x_face_center = center_of_face[0]
-    y_face_center = center_of_face[1]
-
-    x1 = int(w/2 - self.center_area_size_half)
-    y1 = int(h/2 - self.center_area_size_half)
-    x2 = int(w/2 + self.center_area_size_half)
-    y2 = int(h/2 + self.center_area_size_half)
-    # print('center: ', x_face_center, y_face_center)
-    # print('box: ', x1, x2, y1, y2)
-
-    if x_face_center > x1 and x_face_center < x2 and y_face_center > y1 and y_face_center < y2:
-      return True
-    else:
-      return False
-    
+  
   def ConvertFromDetectionToCoordinate(self, detection):
     location = detection.location_data
     relative_bounding_box = location.relative_bounding_box
@@ -231,29 +195,7 @@ class FaceAnalyst():
     heightt = relative_bounding_box.height
 
     return x_min, y_min, widthh, heightt
-
-  def alignCenters(self, frame):
-    _, results, h, w =  self.detectFaces(frame)
-    iscenter = False
-    # print(type(results.detections), results.detections)
-
-    if len(results.detections) > 1:
-      print("Too many Faces are detected")
-      return frame, iscenter
-    else:
-      detection = results.detections[0]
-      x_min, y_min, widthh, heightt = self.ConvertFromDetectionToCoordinate(detection)
-      absx, absy=self.mp_drawing._normalized_to_pixel_coordinates(x_min, y_min, w, h)
-      abswidth, absheight = self.mp_drawing._normalized_to_pixel_coordinates(x_min+widthh,y_min+heightt,w,h) 
-      center_of_face = (int(absx + abswidth)//2, int(absy + absheight)//2)
-
-      # print(absx,absy,abswidth, absheight, center_of_face)
-
-      cv2.circle(frame, center_of_face , radius=5, color=(255, 0, 0), thickness=3)
-      iscenter = self.checkCenterOfFace(center_of_face, h, w)
-
-      return frame, iscenter
-      
+  
   def execute_face_application(self, frame, embedding_data=None, HeadPoseEstimation=False, FaceIdentification=False):
 
     if embedding_data is None and FaceIdentification is True:
@@ -284,6 +226,7 @@ class FaceAnalyst():
     
     return image
 
+  '''
   def show_instruction(self, frame):
     (h, w) = frame.shape[:2]
     background_image = np.zeros((h, w, 3), dtype="uint8")
@@ -302,3 +245,43 @@ class FaceAnalyst():
 
 
 
+  def checkCenterOfFace(self, center_of_face, h, w):
+    x_face_center = center_of_face[0]
+    y_face_center = center_of_face[1]
+
+    x1 = int(w/2 - self.center_area_size_half)
+    y1 = int(h/2 - self.center_area_size_half)
+    x2 = int(w/2 + self.center_area_size_half)
+    y2 = int(h/2 + self.center_area_size_half)
+    # print('center: ', x_face_center, y_face_center)
+    # print('box: ', x1, x2, y1, y2)
+
+    if x_face_center > x1 and x_face_center < x2 and y_face_center > y1 and y_face_center < y2:
+      return True
+    else:
+      return False
+    
+
+
+  def alignCenters(self, frame):
+    _, results, h, w =  self.detectFaces(frame)
+    iscenter = False
+    # print(type(results.detections), results.detections)
+
+    if len(results.detections) > 1:
+      print("Too many Faces are detected")
+      return frame, iscenter
+    else:
+      detection = results.detections[0]
+      x_min, y_min, widthh, heightt = self.ConvertFromDetectionToCoordinate(detection)
+      absx, absy=self.mp_drawing._normalized_to_pixel_coordinates(x_min, y_min, w, h)
+      abswidth, absheight = self.mp_drawing._normalized_to_pixel_coordinates(x_min+widthh,y_min+heightt,w,h) 
+      center_of_face = (int(absx + abswidth)//2, int(absy + absheight)//2)
+
+      # print(absx,absy,abswidth, absheight, center_of_face)
+
+      cv2.circle(frame, center_of_face , radius=5, color=(255, 0, 0), thickness=3)
+      iscenter = self.checkCenterOfFace(center_of_face, h, w)
+
+      return frame, iscenter
+  '''
