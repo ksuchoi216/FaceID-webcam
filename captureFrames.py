@@ -39,7 +39,7 @@ def captureFrames(config, faceAnalyst):
       break
     
     ''' 
-    # the following code for registration
+    # the following code for face registration
     # wait key 't' for test
     if key == 116:
       saveFrame(frame)
@@ -60,7 +60,7 @@ def captureFrames(config, faceAnalyst):
     '''
     
     # frame = faceAnalyst.execute_face_application(frame, embedding_data=dataAdministrator.get_embedding_data(), HeadPoseEstimation=True, FaceIdentification=True)
-    frame = faceAnalyst.execute_face_application(frame, HeadPoseEstimation=True, FaceIdentification=True)
+    frame = faceAnalyst.execute_face_application(frame, HeadPoseEstimation=True, FaceIdentification=True, ObjectTracking=True)
 
     cv2.imshow("mac", frame)
   

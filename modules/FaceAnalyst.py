@@ -22,6 +22,8 @@ import mediapipe as mp
 
 from .utils import printd, draw_center_border
 
+from .external_library.sort.sort import Sort
+
 def calculateDistance(A, B):
   return torch.dist(A, B).item()
 
@@ -50,6 +52,7 @@ class FaceAnalyst():
       self.face_feature_extractor.classify = True
       
     self.face_feature_extractor.eval()
+    
 
     self.face_prob_threshold1 = cfg["face_prob_threshold1"]
     self.face_prob_threshold2 = cfg["face_prob_threshold2"]
@@ -76,6 +79,13 @@ class FaceAnalyst():
     self.predictor = dlib.shape_predictor(PREDICTOR_PATH)
     
     self.face3Dmodel = world.ref3DModel()
+
+    # Object tracking
+    self.object_detector = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
+    self.object_detector.float()
+    self.object_detector.eval()
+    self.mot_tracker = Sort()
+
 
     self.center_area_size_half = cfg["center_area_size_half"]
 
@@ -133,8 +143,6 @@ class FaceAnalyst():
     cv2.putText(image, GAZE, (absx, absheight+30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 80), 2)
 
     return image
-
-
   
   def identifyFace(self, org_image, image, absx, absy, abswidth, absheight):
     cropped_face_image = org_image[absy : absheight, absx: abswidth]
@@ -185,7 +193,24 @@ class FaceAnalyst():
 
     return x_min, y_min, widthh, heightt
   
-  def execute_face_application(self, frame, HeadPoseEstimation=False, FaceIdentification=False):
+  def track_objects(self, image):
+    results = self.object_detector(image)    
+    df = results.pandas().xyxy[0]
+    detections = df[df['name']=='person'].drop(columns='name').to_numpy()
+    track_ids = self.mot_tracker.update(detections)
+    
+    for i in range(len(track_ids.tolist())):
+      coords = track_ids.tolist()[i]
+      xmin, ymin, xmax, ymax = int(coords[0]), int(coords[1]), int(coords[2]), int(coords[3])
+      name_idx = int(coords[4])
+      name = 'ID: {}'.format(str(name_idx))
+
+      image = cv2.rectangle(image, (xmin, ymin), (xmax, ymax), (255, 0 ,0), 2)
+      image = cv2.putText(image, name, (xmin, ymin-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 0, 0), 2)
+    
+    return image
+  
+  def execute_face_application(self, frame, HeadPoseEstimation=False, FaceIdentification=False, ObjectTracking=False):
     org_image = frame.copy()
     image, results, h, w = self.detectFaces(frame)
 
@@ -200,6 +225,9 @@ class FaceAnalyst():
           abswidth, absheight = self.mp_drawing._normalized_to_pixel_coordinates(x_min+widthh,y_min+heightt,w,h) 
         except:
           continue
+        
+        if ObjectTracking:
+          image = self.track_objects(image)
 
         # HEAD POSE ESTIMATION 
         if HeadPoseEstimation:
@@ -210,6 +238,7 @@ class FaceAnalyst():
           image = self.identifyFace(org_image, image, absx, absy, abswidth, absheight)
     
     return image
+
 
   '''
   def detectFaceFromDataLoader(self, dataLoader, idx_to_class):

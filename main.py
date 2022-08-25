@@ -7,7 +7,7 @@ import argparse
 import os, sys
 
 # CUSTOM
-from modules import DataAdministrator, FaceAnalyst, FaceRegisterer, DecisionMaker
+from modules import FaceAnalyst
 from modules.utils import *
 from captureFrames import captureFrames
 

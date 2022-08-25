@@ -1,49 +1,33 @@
-import torch
+import os
+import json
+
 import cv2
-from PIL import Image
-# DeepSORT -> Importing DeepSORT.
-from .ref_code.deep_sort.application_util import preprocessing
-from .ref_code.deep_sort.deep_sort import nn_matching
-from .ref_code.deep_sort.deep_sort.detection import Detection
-from .ref_code.deep_sort.deep_sort.tracker import Tracker
-from .ref_code.deep_sort.tools import generate_detections as gdet
+import torch
+import pandas as pd
 
-
-from .ref_code.yolov5.models.common import DetectMultiBackend
-from .ref_code.yolov5.utils.dataloaders import IMG_FORMATS, VID_FORMATS, LoadImages, LoadStreams
-from .ref_code.yolov5.utils.general import (LOGGER, check_file, check_img_size, check_imshow, check_requirements, colorstr, cv2,
-                         increment_path, non_max_suppression, print_args, scale_coords, strip_optimizer, xyxy2xywh)
-from .ref_code.yolov5.utils.plots import Annotator, colors, save_one_box
-from .ref_code.yolov5.utils.torch_utils import select_device, time_sync
+from external_library.sort.sort import Sort
 
 
 class ObjectTracker():
-  def __init__(self, args):
-    self.args = args
+  def __init__(self):
     self.object_detector = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
-    metric = nn_matching.NearestNeighborDistanceMetric("cosine", args.max_cosine_distance, args.nn_budget)
-    tracker = Tracker(metric)
-
-  def detect_objects(self, frame):
-    img = Image.fromarray(frame)
-    res = self.object_detector(img)
-    # res.print()
-    df = res.pandas().xyxy[0]
-    df = df.loc[(df['name'] == 'person') & (df['confidence'] >= 0.7)]
-    df = df[['xmin', 'ymin', 'xmax', 'ymax']]
-
-    boxes = df.to_numpy()
-
-    for i, box in enumerate(boxes):
-      frame = cv2.rectangle(frame, (int(box[0]),int(box[1])) , (int(box[2]),int(box[3])), (255,0,0), 2)
+    self.object_detector.float()
+    self.object_detector.eval()
     
-    return frame
+    self.mot_tracker = Sort()
+    
+  def track_objects(self, image):
+    results = self.object_detector(image)    
+    df = results.pandas().xyxy[0]
+    detections = df[df['name']=='person'].drop(columns='name').to_numpy()
+    track_ids = self.mot_tracker.update(detections)
+    
+    for i in range(len(track_ids.tolist())):
+      coords = track_ids.tolist()[i]
+      xmin, ymin, xmax, ymax = int(coords[0]), int(coords[1]), int(coords[2]), int(coords[3])
+      name_idx = int(coords[4])
+      name = 'ID: {}'.format(str(name_idx))
 
-  def track_objects(self, frame):
-    # DeepSORT -> Initializing tracker.
-    max_cosine_distance = 0.4
-    nn_budget = None
-    model_filename = './mars-small128.pb'
-    encoder = gdet.create_box_encoder(model_filename, batch_size=1)
-    metric = nn_matching.NearestNeighborDistanceMetric("cosine", max_cosine_distance, nn_budget)
-    tracker = Tracker(metric)
+      image = cv2.rectangle(image, (xmin, ymin), (xmax, ymax), (255, 0 ,0), 2)
+      image = cv2.putText(image, name, (xmin, ymin-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 0, 0), 2)
+      
