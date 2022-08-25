@@ -31,18 +31,23 @@ def calculateSimilarity(A, B):
 
 class FaceAnalyst():
   def __init__(self, cfg):
-    customed_pretrained_model = cfg["model"]["customed_pretrained_model"]
-    image_size_for_face_detector = cfg["model"]["image_size_for_face_detector"]
-    path_for_pretrained_model = cfg["model"]["path_for_pretrained_model"]
+    self.registered_users = cfg["registered_users"]
+    num_classes = len(self.registered_users)
+    cfg_model = cfg["model"]
+    
+    customed_pretrained_model = cfg_model["customed_pretrained_model"]
+    image_size_for_face_detector = cfg_model["image_size_for_face_detector"]
+    path_for_pretrained_model = cfg_model["path_for_pretrained_model"]
+    device = torch.device('cpu')
     
     self.single_face_detector = MTCNN(image_size=image_size_for_face_detector, margin=0, keep_all=False, min_face_size=40) # keep_all=False
     self.multi_faces_detector = MTCNN(image_size=image_size_for_face_detector, margin=0, keep_all=True, min_face_size=40) # keep_all=True
-    self.face_feature_extractor = InceptionResnetV1(pretrained='vggface2')
+    self.face_feature_extractor = InceptionResnetV1(pretrained=cfg_model["pretrained"], classify=cfg_model["classify"], num_classes=num_classes, device= device)
     # self.object_detector = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
     
-    # if customed_pretrained_model is True:
-    #   self.face_feature_extractor.load_state_dict(torch.load(path_for_pretrained_model))
-    #   self.face_feature_extractor.classify = True
+    if customed_pretrained_model is True:
+      self.face_feature_extractor.load_state_dict(torch.load(path_for_pretrained_model, map_location = device))
+      self.face_feature_extractor.classify = True
       
     self.face_feature_extractor.eval()
 
@@ -122,51 +127,35 @@ class FaceAnalyst():
     elif angles[1] > 20:
         GAZE = "Looking: Right"
     else:
-        GAZE = " - "
+        GAZE = " "
 
-    cv2.putText(image, str(round(angles[1],4)), (absx, absy-10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 80), 2)
+    # cv2.putText(image, str(round(angles[1],4)), (absx, absy-10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 80), 2)
     cv2.putText(image, GAZE, (absx, absheight+30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 80), 2)
 
     return image
 
 
-  def detectFaceFromDataLoader(self, dataLoader, idx_to_class):
-    name_list = []
-    embedding_list = []
-
-    for img, idx in dataLoader:
-      face, prob = self.single_face_detector(img, return_prob = True)
-
-      if face is not None and prob > self.face_prob_threshold1:
-        emb = self.face_feature_extractor(face.unsqueeze(0))
-        embedding_list.append(emb.detach())
-        name_list.append(idx_to_class[idx])
-      
-    data = [embedding_list, name_list]
-
-    return data
-
-  def detectFacesFromFrame(self, frame):
-    img = Image.fromarray(frame)
-    img_cropped_list, prob_list = self.multi_faces_detector(img, return_prob=True)
-
-    return img, img_cropped_list, prob_list
   
-  def identifyFace(self, embedding_data, org_image, image, absx, absy, abswidth, absheight):
-    embedding_list = embedding_data[0] 
-    name_list = embedding_data[1]
-
+  def identifyFace(self, org_image, image, absx, absy, abswidth, absheight):
     cropped_face_image = org_image[absy : absheight, absx: abswidth]
     cropped_face_image = Image.fromarray(cropped_face_image)
     # cropped_face_image = self.transform(cropped_face_image)
     
-      
     face, prob = self.single_face_detector(cropped_face_image, return_prob= True)
     
     # method about calculation of distances between images
     if face is not None and prob > 0.92:
-      emb =  self.face_feature_extractor(face.unsqueeze(0))
-      print(f'emb: {emb.shape}')
+      results = self.face_feature_extractor(face.unsqueeze(0))
+      results = torch.sigmoid(results)
+      print(results)
+      prob, index = torch.max(results, 1)
+      print(f'prob: {prob} index: {index}')
+      
+      if prob > 0.97:
+        # print(self.registered_users[index], prob)
+        cv2.rectangle(image, (absx, absy), (abswidth, absheight), (0, 255, 80), 2)
+        cv2.putText(image, self.registered_users[index], (absx, absy-10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 80), 2)
+        
       
     return image
 
@@ -196,11 +185,7 @@ class FaceAnalyst():
 
     return x_min, y_min, widthh, heightt
   
-  def execute_face_application(self, frame, embedding_data=None, HeadPoseEstimation=False, FaceIdentification=False):
-
-    if embedding_data is None and FaceIdentification is True:
-      raise Exception("There is no embedding data")
-
+  def execute_face_application(self, frame, HeadPoseEstimation=False, FaceIdentification=False):
     org_image = frame.copy()
     image, results, h, w = self.detectFaces(frame)
 
@@ -221,10 +206,35 @@ class FaceAnalyst():
           image = self.estimateHeadPose(org_image, image, absx, absy, abswidth, absheight)
         
         # FACE IDENTIFICATION
-        if FaceIdentification and embedding_data is not None:
-          image = self.identifyFace(embedding_data, org_image, image, absx, absy, abswidth, absheight)
+        if FaceIdentification:
+          image = self.identifyFace(org_image, image, absx, absy, abswidth, absheight)
     
     return image
+
+  '''
+  def detectFaceFromDataLoader(self, dataLoader, idx_to_class):
+    name_list = []
+    embedding_list = []
+
+    for img, idx in dataLoader:
+      face, prob = self.single_face_detector(img, return_prob = True)
+
+      if face is not None and prob > self.face_prob_threshold1:
+        emb = self.face_feature_extractor(face.unsqueeze(0))
+        embedding_list.append(emb.detach())
+        name_list.append(idx_to_class[idx])
+      
+    data = [embedding_list, name_list]
+
+    return data
+
+  def detectFacesFromFrame(self, frame):
+    img = Image.fromarray(frame)
+    img_cropped_list, prob_list = self.multi_faces_detector(img, return_prob=True)
+
+    return img, img_cropped_list, prob_list
+  '''
+
 
   '''
   def show_instruction(self, frame):

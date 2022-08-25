@@ -3,7 +3,7 @@ import cv2
 
 from modules.utils import draw_center_border, saveFrame
 
-def captureFrames(config, dataAdministrator, faceAnalyst):
+def captureFrames(config, faceAnalyst):
   print('\nstart video capturing')
 
   frame_width = config["frame_width"]
@@ -59,7 +59,8 @@ def captureFrames(config, dataAdministrator, faceAnalyst):
         isregistration = dataAdministrator.saveFrameInFolder(org_frame)
     '''
     
-    frame = faceAnalyst.execute_face_application(frame, embedding_data=dataAdministrator.get_embedding_data(), HeadPoseEstimation=True, FaceIdentification=True)
+    # frame = faceAnalyst.execute_face_application(frame, embedding_data=dataAdministrator.get_embedding_data(), HeadPoseEstimation=True, FaceIdentification=True)
+    frame = faceAnalyst.execute_face_application(frame, HeadPoseEstimation=True, FaceIdentification=True)
 
     cv2.imshow("mac", frame)
   
