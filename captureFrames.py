@@ -4,6 +4,16 @@ import cv2
 from modules.utils import draw_center_border, saveFrame
 
 def captureFrames(config, faceAnalyst):
+  """_summary_
+
+  Args:
+      config (dict): config named "default" config such as config["default"]
+      faceAnalyst (class): this object for analysing images 
+                such as object tracking, head pose estimation, face detection, and face recognition.
+
+  Raises:
+      Exception: if there is no captured image, raise the exception
+  """
   print('\nstart video capturing')
 
   frame_width = config["frame_width"]

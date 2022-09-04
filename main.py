@@ -13,6 +13,11 @@ from captureFrames import captureFrames
 
 
 def main(config):
+  """_summary_
+
+  Args:
+      config (dict): stored basic setting variables. please refer to ./config/config files
+  """
   # dataAdmin
   # dataAdministrator = DataAdministrator(config["DataAdministrator"])
   # dataLoader, idx_to_class = dataAdministrator.create_data_loader()
@@ -28,6 +33,11 @@ def main(config):
   captureFrames(config["default"], faceAnalyst)
 
 def parse_args():
+  """_summary_
+
+  Returns:
+      dict: parsed arguments
+  """
   parser = argparse.ArgumentParser(description = "FACE ID")
   parser.add_argument("--new_user_name", help="insert new user name", default = "newuser")
 
