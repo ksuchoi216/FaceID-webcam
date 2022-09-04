@@ -33,6 +33,12 @@ def calculateSimilarity(A, B):
 
 class FaceAnalyst():
   def __init__(self, cfg):
+    """_summary_
+
+    Args:
+        sscfg (dict): "config file only for FaceAnalyst 
+                such as config["FaceAnlyst"]
+    """
     self.registered_users = cfg["registered_users"]
     num_classes = len(self.registered_users)
     cfg_model = cfg["model"]
