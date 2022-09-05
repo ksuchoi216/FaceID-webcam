@@ -1,4 +1,4 @@
-# INSTALLATION
+# 1. INSTALLATION
 ## facenet
 git clone git@github.com:timesler/facenet-pytorch.git ./modules/external_library/facenet_pytorch/
 
@@ -17,7 +17,7 @@ cd ../../../..
 pip install mediapipe
 pip install dlib
 
-# CODE STRUCTURE
+# 2. CODE STRUCTURE
 This code is inclueded in main.py, captureFrames.py, and additional modules.
 The flow of the code's execution is main.py, captureFrames.py
 
