@@ -1,4 +1,4 @@
-# Installation
+# INSTALLATION
 ## facenet
 git clone git@github.com:timesler/facenet-pytorch.git ./modules/external_library/facenet_pytorch/
 
@@ -17,11 +17,11 @@ cd ../../../..
 pip install mediapipe
 pip install dlib
 
-# code structure
+# CODE STRUCTURE
 This code is inclueded in main.py, captureFrames.py, and additional modules.
 The flow of the code's execution is main.py, captureFrames.py
 
-## explanation for each files
+## Explanation for each files
 main.py is for parsing arguments and declaration about related objects such as FaceAnalyst.
 
 captureFrames.py is for receiving frames from webcam by utilsing OpenCV.
@@ -43,7 +43,7 @@ The following is order of execution for this code.
       - ObjectTracking: optino selection for tracking the "human" object
   - if you want to get further information regarding faceAnalyst.execute_face_application(), please refer to docstrings in the code.
 
-# References
+# REFERENCES
 
 ## facenet tensorflow
 https://github.com/davidsandberg/facenet
