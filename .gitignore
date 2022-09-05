@@ -128,7 +128,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# custom ignore
+# custom settings
 /data/
 /modules/external_library/facenet_pytorch/
 /modules/external_library/HeadPoseEstimation/

@@ -13,10 +13,18 @@
     "interval_between_frames": 10000
   },
   "FaceAnalyst":{
+    "registered_users":["jhyoo", "jhoh", "jhongyoo", "kschoi"],
     "face_prob_threshold1": 0.93,
     "face_prob_threshold2": 0.9,
     "face_dist_threshold": 2,
     "focal": 1.0,
-    "center_area_size_half": 130
+    "center_area_size_half": 130,
+    "model": {
+      "image_size_for_face_detector": 240,
+      "customed_pretrained_model": true, 
+      "path_for_pretrained_model": "./data/face-extraction-model.pt",
+      "pretrained": "vggface2",
+      "classify": true
+    }
   }
 }

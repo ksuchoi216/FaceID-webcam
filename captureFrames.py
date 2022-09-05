@@ -3,9 +3,17 @@ import cv2
 
 from modules.utils import draw_center_border, saveFrame
 
+def captureFrames(config, faceAnalyst):
+  """_summary_
 
-# def captureFrames(args, dataAdministrator, faceAnalyst, faceRegisterer, decisionMaker=None, objectTracker=None):
-def captureFrames(config, dataAdministrator, faceAnalyst, decisionMaker=None):
+  Args:
+      config (dict): config named "default" config such as config["default"]
+      faceAnalyst (class): this object for analysing images 
+                such as object tracking, head pose estimation, face detection, and face recognition.
+
+  Raises:
+      Exception: if there is no captured image, raise the exception
+  """
   print('\nstart video capturing')
 
   frame_width = config["frame_width"]
@@ -41,7 +49,7 @@ def captureFrames(config, dataAdministrator, faceAnalyst, decisionMaker=None):
       break
     
     ''' 
-    # the following code for registration
+    # the following code for face registration
     # wait key 't' for test
     if key == 116:
       saveFrame(frame)
@@ -61,7 +69,8 @@ def captureFrames(config, dataAdministrator, faceAnalyst, decisionMaker=None):
         isregistration = dataAdministrator.saveFrameInFolder(org_frame)
     '''
     
-    frame = faceAnalyst.execute_face_application(frame, embedding_data=dataAdministrator.get_embedding_data(), HeadPoseEstimation=True, FaceIdentification=True)
+    # frame = faceAnalyst.execute_face_application(frame, embedding_data=dataAdministrator.get_embedding_data(), HeadPoseEstimation=True, FaceIdentification=True)
+    frame = faceAnalyst.execute_face_application(frame, HeadPoseEstimation=True, FaceIdentification=True, ObjectTracking=True)
 
     cv2.imshow("mac", frame)
   
