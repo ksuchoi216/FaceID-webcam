@@ -100,7 +100,21 @@ class FaceAnalyst():
   # [3] FACE IDENTIFICATION - FUNCTION
   # ------------------------------------------------------------------------------------------------------------------------
   def identifyFace(self, org_image, image, abs_x_min, abs_y_min, abs_x_max, abs_y_max):
-        
+    """identification of a detected face taken by the mediapipe face detector
+
+    Args:
+        org_image (BGR image): original image for detecting a face and extracting features from a face.
+        image (BGR image): an image drawn with face detection, head pose estimation, and object tracking
+        abs_min_x (float): absolute min x coordinate
+        abs_min_y (float): absolute min y coordinate
+        abs_max_x (float): absolute max x coordinate
+        abs_max_y (float): absolute max y coordinate
+
+
+    Returns:
+        image (BGR image): an image drawn with information regarding the recognized face
+    """
+
     cropped_face_image = org_image[abs_y_min : abs_y_max, abs_x_min: abs_x_max]
     cropped_face_image = Image.fromarray(cropped_face_image)
     # cropped_face_image = self.transform(cropped_face_image)
@@ -325,90 +339,3 @@ class FaceAnalyst():
           image = self.identifyFace(org_image, image, abs_x_min, abs_y_min, abs_x_max, abs_y_max)
     
     return image
-
-
-  # following functions are not related to face identification based on trained classifier
-  '''
-  def detectFaceFromDataLoader(self, dataLoader, idx_to_class):
-    name_list = []
-    embedding_list = []
-
-    for img, idx in dataLoader:
-      face, prob = self.single_face_detector(img, return_prob = True)
-
-      if face is not None and prob > self.face_prob_threshold1:
-        emb = self.face_feature_extractor(face.unsqueeze(0))
-        embedding_list.append(emb.detach())
-        name_list.append(idx_to_class[idx])
-      
-    data = [embedding_list, name_list]
-
-    return data
-
-  def detectFacesFromFrame(self, frame):
-    img = Image.fromarray(frame)
-    img_cropped_list, prob_list = self.multi_faces_detector(img, return_prob=True)
-
-    return img, img_cropped_list, prob_list
-  '''
-
-
-  '''
-  def show_instruction(self, frame):
-    (h, w) = frame.shape[:2]
-    background_image = np.zeros((h, w, 3), dtype="uint8")
-    coordinate = (int(w/4), int(h/2))
-
-    instruction_text = "First, position your face in the camera frame. "
-    instruction_image = cv2.putText(background_image, instruction_text, coordinate, cv2.FONT_HERSHEY_SIMPLEX, 
-                      fontScale=0.7, color=(255, 0, 0), thickness=2, lineType=cv2.LINE_AA)
-    instruction_text = "Then, move your head in a circle to show all the angles of your face."
-    coordinate = (int(w/4), int(h/2+20))
-    instruction_image = cv2.putText(background_image, instruction_text, coordinate, cv2.FONT_HERSHEY_SIMPLEX, 
-                  fontScale=0.7, color=(255, 0, 0), thickness=2, lineType=cv2.LINE_AA)
-
-    cv2.imshow("mac", instruction_image)
-
-
-
-
-  def checkCenterOfFace(self, center_of_face, h, w):
-    x_face_center = center_of_face[0]
-    y_face_center = center_of_face[1]
-
-    x1 = int(w/2 - self.center_area_size_half)
-    y1 = int(h/2 - self.center_area_size_half)
-    x2 = int(w/2 + self.center_area_size_half)
-    y2 = int(h/2 + self.center_area_size_half)
-    # print('center: ', x_face_center, y_face_center)
-    # print('box: ', x1, x2, y1, y2)
-
-    if x_face_center > x1 and x_face_center < x2 and y_face_center > y1 and y_face_center < y2:
-      return True
-    else:
-      return False
-    
-
-
-  def alignCenters(self, frame):
-    _, results, h, w =  self.detectFaces(frame)
-    iscenter = False
-    # print(type(results.detections), results.detections)
-
-    if len(results.detections) > 1:
-      print("Too many Faces are detected")
-      return frame, iscenter
-    else:
-      detection = results.detections[0]
-      x_min, y_min, widthh, heightt = self.ConvertFromDetectionToCoordinate(detection)
-      absx, absy=self.mp_drawing._normalized_to_pixel_coordinates(x_min, y_min, w, h)
-      abswidth, absheight = self.mp_drawing._normalized_to_pixel_coordinates(x_min+widthh,y_min+heightt,w,h) 
-      center_of_face = (int(absx + abswidth)//2, int(absy + absheight)//2)
-
-      # print(absx,absy,abswidth, absheight, center_of_face)
-
-      cv2.circle(frame, center_of_face , radius=5, color=(255, 0, 0), thickness=3)
-      iscenter = self.checkCenterOfFace(center_of_face, h, w)
-
-      return frame, iscenter
-  '''
