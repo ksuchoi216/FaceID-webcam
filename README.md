@@ -42,3 +42,13 @@ The following is order of execution for this code.
       - FaceIdentification: option selection for recognizing a face from registered faces.
       - ObjectTracking: optino selection for tracking the "human" object
   - if you want to get further information regarding faceAnalyst.execute_face_application(), please refer to docstrings in the code.
+
+# References
+
+## facenet tensorflow
+https://github.com/davidsandberg/facenet
+## facenet pytorch
+https://github.com/davidsandberg/facenet
+
+## yolov5 pytorch
+https://pytorch.org/hub/ultralytics_yolov5/
