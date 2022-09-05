@@ -13,6 +13,7 @@ def captureFrames(config, faceAnalyst):
 
   Raises:
       Exception: if there is no captured image, raise the exception
+      
   """
   print('\nstart video capturing')
 
@@ -47,27 +48,6 @@ def captureFrames(config, faceAnalyst):
       vc.release()
       cv2.destroyWindow("mac")
       break
-    
-    ''' 
-    # the following code for face registration
-    # wait key 't' for test
-    if key == 116:
-      saveFrame(frame)
-
-    # wait key 'r' for registration
-    if key == 114:
-      isregistration = True
-      faceAnalyst.show_instruction(frame)
-      cv2.waitKey(100)
-
-    if isregistration == True:
-      # print('Starting registration...')
-      frame = draw_center_border(frame, config["center_area_size_half"], (127, 255, 255), 5, 5, 10)
-      frame, iscenter = faceAnalyst.alignCenters(frame)
-      if iscenter is True:
-        dataAdministrator.createNewDirectory()
-        isregistration = dataAdministrator.saveFrameInFolder(org_frame)
-    '''
     
     # frame = faceAnalyst.execute_face_application(frame, embedding_data=dataAdministrator.get_embedding_data(), HeadPoseEstimation=True, FaceIdentification=True)
     frame = faceAnalyst.execute_face_application(frame, HeadPoseEstimation=True, FaceIdentification=True, ObjectTracking=True)
