@@ -26,7 +26,7 @@ def calculateSimilarity(A, B):
 
 
 class FaceAnalyst:
-    def __init__(self, cfg, eyeTracker):
+    def __init__(self, cfg):
         """_summary_
 
         Args:
@@ -359,7 +359,7 @@ class FaceAnalyst:
     # ========================================================================================================================
     # [4] EYES TRACKING - FUNCTION
     # ------------------------------------------------------------------------------------------------------------------------
-    def trackEyes(self):
+    def trackEyes(self, eyeTracker):
       return 0
 
     # ========================================================================================================================
@@ -422,6 +422,7 @@ class FaceAnalyst:
         FaceIdentification=False,
         ObjectTracking=False,
         EyeTracking=True,
+        eyeTracker=None,
     ):
         """
         Args:
@@ -495,6 +496,6 @@ class FaceAnalyst:
 
                 # [4] EYE TRACKING
                 if EyeTracking:
-                    image = self.track_eye()
+                    image = self.track_eye(eyeTracker)
 
         return image

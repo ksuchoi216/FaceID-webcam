@@ -1,5 +1,4 @@
-from .FaceAnalyst import *
 from .DataAdministrator import *
-from .FaceRegisterer import *
+from .EyeTracker import *
+from .FaceAnalyst import *
 from .external_library import *
-

@@ -1,7 +1,7 @@
 import cv2
 
 
-def captureFrames(config, faceAnalyst):
+def captureFrames(config, faceAnalyst, eyeTracker):
     """
     Args:
         config (dict): config named "default" config such as config["default"]
@@ -46,6 +46,7 @@ def captureFrames(config, faceAnalyst):
             FaceIdentification=False,
             ObjectTracking=False,
             EyeTracking=True,
+            eyeTracker=eyeTracker
         )
 
         cv2.imshow("mac", frame)

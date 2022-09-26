@@ -6,7 +6,7 @@ import warnings
 from captureFrames import captureFrames
 
 # CUSTOM
-from modules import FaceAnalyst
+from modules import FaceAnalyst, EyeTracker
 
 # from modules.utils import *
 
@@ -26,7 +26,10 @@ def main(config):
     # faceAnalyst
     faceAnalyst = FaceAnalyst(config["FaceAnalyst"])
 
-    captureFrames(config["default"], faceAnalyst)
+    # EyeTracker
+    eyeTracker = EyeTracker(config["EyeTracker"])
+
+    captureFrames(config["default"], faceAnalyst, eyeTracker)
 
 
 def parse_args():
