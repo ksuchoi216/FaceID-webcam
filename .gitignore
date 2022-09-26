@@ -128,9 +128,21 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+
 # custom settings
 /data/photos/
 /data/test/
 /data/data.pt
 /modules/external_library/facenet_pytorch/
 /modules/external_library/HeadPoseEstimation/
+
+/temp_eyetracking_test/*
+!/temp_eyetracking_test/eye_tracker.py
+!/temp_eyetracking_test/README.md
+
+
+# LINT PEP8
+.flake8
+.isort.cfg
+.markdownlint.yaml
+.trunk/

@@ -1,8 +1,7 @@
 {
   "default": {
     "frame_width": 1000,
-    "frame_height": 1000,
-    "isregistration": false
+    "frame_height": 1000
   },
   "DataAdministrator":{
     "filepath_image_folder": "./data/photos/",
@@ -25,6 +24,11 @@
       "path_for_pretrained_model": "./data/face-extraction-model.pt",
       "pretrained": "vggface2",
       "classify": true
+    },
+    "trackingEyes":{
+      "folder_for_preset_images": "./data/preset_images/",
+      "first_move_setting": [0, 1],
+      "second_move_setting": [0.2, 0]
     }
   }
-}
+  }
