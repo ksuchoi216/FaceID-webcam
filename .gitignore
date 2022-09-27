@@ -129,6 +129,14 @@ dmypy.json
 .pyre/
 
 
+# LINT PEP8
+.flake8
+.isort.cfg
+.markdownlint.yaml
+.trunk/
+
+
+
 # custom settings
 /data/photos/
 /data/test/
@@ -136,13 +144,4 @@ dmypy.json
 /modules/external_library/facenet_pytorch/
 /modules/external_library/HeadPoseEstimation/
 
-/temp_eyetracking_test/*
-!/temp_eyetracking_test/eye_tracker.py
-!/temp_eyetracking_test/README.md
-
-
-# LINT PEP8
-.flake8
-.isort.cfg
-.markdownlint.yaml
-.trunk/
+shape_predictor_68_face_landmarks.dat

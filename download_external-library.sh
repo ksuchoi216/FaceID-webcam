@@ -11,3 +11,7 @@ git clone "$repo2" "$folder2"
 cd ./modules/external_library/HeadPoseEstimation/models/
 bash downloader.sh
 cd ../../../..
+
+
+wget   http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2 # DOWNLOAD LINK
+bunzip2 ./shape_predictor_68_face_landmarks.dat.bz2

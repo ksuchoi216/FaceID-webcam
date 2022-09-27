@@ -1,18 +1,17 @@
 import os
 import sys
-import torch
-from .external_library import MTCNN, InceptionResnetV1
-from PIL import Image
+
 import numpy as np
-
+import torch
 import cv2
+from PIL import Image
 from torchvision import transforms
-
-# head pose estimation
-from .external_library.HeadPoseEstimation.drawFace import draw
-from .external_library.HeadPoseEstimation import reference_world as world
 import dlib
 import mediapipe as mp
+
+from .external_library import MTCNN, InceptionResnetV1
+from .external_library.HeadPoseEstimation.drawFace import draw
+from .external_library.HeadPoseEstimation import reference_world as world
 from .external_library.sort.sort import Sort
 
 
@@ -33,6 +32,7 @@ class FaceAnalyst:
             sscfg (dict): "config file only for FaceAnalyst
                     such as config["FaceAnlyst"]
         """
+        self.correct_y_range = cfg["correct_y_range"]
         self.registered_users = cfg["registered_users"]
         num_classes = len(self.registered_users)
         cfg_m = cfg["model"]
@@ -96,7 +96,7 @@ class FaceAnalyst:
             mp.solutions.drawing_utils
         )  # drawing face landmarks by using mediapipe
         self.face_detection = self.mp_face_detection.FaceDetection(
-            min_detection_confidence=0.7
+            min_detection_confidence=0.5
         )
 
         # related to head pose estimation
@@ -125,15 +125,16 @@ class FaceAnalyst:
 
         self.center_area_size_half = cfg["center_area_size_half"]
         
-        
-        # eyetracker
-        self.eyeTracker = eyeTracker
+    def get_single_face_detector(self):
+        return self.single_face_detector
 
     # ========================================================================================================================
     # [3] FACE IDENTIFICATION - FUNCTION
     # ------------------------------------------------------------------------------------------------------------------------
     def identifyFace(
-        self, org_image, image, abs_x_min, abs_y_min, abs_x_max, abs_y_max
+        self, org_image, image,
+        start_point,
+        end_point
     ):
         """
         identification of a detected face taken by the mediapipe face detector
@@ -154,8 +155,11 @@ class FaceAnalyst:
             regarding the recognized face
         """
 
-        cropped_face_image = org_image[abs_y_min:abs_y_max,
-                                       abs_x_min:abs_x_max]
+        abs_min_x, abs_min_y = start_point
+        abs_max_x, abs_max_y = end_point
+
+        cropped_face_image = org_image[abs_min_y:abs_max_y,
+                                       abs_min_x:abs_max_x]
         cropped_face_image = Image.fromarray(cropped_face_image)
         # cropped_face_image = self.transform(cropped_face_image)
 
@@ -165,26 +169,35 @@ class FaceAnalyst:
                                                return_prob=True)
 
         # method about calculation of distances between images
-        if face is not None and prob > 0.92:
+        if face is not None and prob > self.face_prob_threshold1:
+            boxes, _ = self.single_face_detector.detect(org_image)
+            box = boxes[0]
             results = self.face_feature_extractor(face.unsqueeze(0))
             results = torch.sigmoid(results)
-            print(results)
+            print(f'results: {results}')
             prob, index = torch.max(results, 1)
             print(f"prob: {prob} index: {index}")
 
-            if prob > 0.97:
+            if prob > self.face_prob_threshold2:
                 # print(self.registered_users[index], prob)
+                # cv2.rectangle(
+                #     image,
+                #     (abs_min_x, abs_min_y),
+                #     (abs_max_x, abs_max_y),
+                #     (255, 0, 0),
+                #     2,
+                # )
                 cv2.rectangle(
                     image,
-                    (abs_x_min, abs_y_min),
-                    (abs_x_max, abs_y_max),
+                    (int(box[0]), int(box[1])),
+                    (int(box[2]), int(box[3])),
                     (0, 255, 80),
                     2,
                 )
                 cv2.putText(
                     image,
                     self.registered_users[index],
-                    (abs_x_min, abs_y_min - 10),
+                    (int(box[0]), int(box[1]) - 10),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     1,
                     (0, 255, 80),
@@ -202,10 +215,8 @@ class FaceAnalyst:
         self,
         org_image,
         image,
-        abs_min_x,
-        abs_min_y,
-        abs_max_x,
-        abs_max_y,
+        start_point,
+        end_point,
         CalculateAngle=False,
         Calculate3Dcoordinates=False,
     ):
@@ -222,6 +233,8 @@ class FaceAnalyst:
         Returns:
             image : BGR image drawn by OpenCV
         """
+        abs_min_x, abs_min_y = start_point
+        abs_max_x, abs_max_y = end_point
 
         img = org_image
         new_rect = dlib.rectangle(abs_min_x, abs_min_y, abs_max_x, abs_max_y)
@@ -275,14 +288,14 @@ class FaceAnalyst:
                 np.sqrt((Qy[2][1] * Qy[2][1]) + (Qy[2][2] * Qy[2][2]))
             )
             z = np.arctan2(Qz[0][0], Qz[1][0])
-            text = f"({x:.2f},{y:.2f},{z:.2f})"
+            text = f"predicted 3D: ({x:.2f},{y:.2f},{z:.2f})"
             cv2.putText(
                 image,
                 text,
                 (abs_max_x, abs_max_y - 30),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 1,
-                (0, 255, 80),
+                (2, 255, 80),
                 2,
             )
 
@@ -292,7 +305,7 @@ class FaceAnalyst:
             elif angles[1] > 20:
                 GAZE = "Looking: Right"
             else:
-                GAZE = " "
+                GAZE = "Unknown direction"
 
             cv2.putText(
                 image,
@@ -359,8 +372,16 @@ class FaceAnalyst:
     # ========================================================================================================================
     # [4] EYES TRACKING - FUNCTION
     # ------------------------------------------------------------------------------------------------------------------------
-    def trackEyes(self, eyeTracker):
-      return 0
+    def track_eyes(self, org_image, image,
+                   eyeTracker,
+                   start_point,
+                   end_point,
+                   IsDrawing=True):
+
+        image = eyeTracker.compute_diff(
+            org_image, image, start_point, end_point, IsDrawing)
+
+        return image
 
     # ========================================================================================================================
 
@@ -380,7 +401,7 @@ class FaceAnalyst:
         """
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        h, w, c = frame.shape
+        h, w, _ = frame.shape
         # To improve performance, optionally mark the frame as not writeable to
         # pass by reference.
         frame.flags.writeable = False
@@ -423,6 +444,7 @@ class FaceAnalyst:
         ObjectTracking=False,
         EyeTracking=True,
         eyeTracker=None,
+        IsDrawing=True
     ):
         """
         Args:
@@ -440,6 +462,7 @@ class FaceAnalyst:
             frame (BGR image) with drawing options: frame image drawn together
             with selected options.
         """
+        self.height, self.width, _ = frame.shape
 
         org_image = frame.copy()
         image, results, h, w = self.detectFaces(frame)
@@ -470,6 +493,11 @@ class FaceAnalyst:
                 except BaseException:
                     continue
 
+                if IsDrawing:
+                    self.face_center = (((abs_x_min+abs_x_max)//2),
+                                        ((abs_y_min+abs_y_max)//2))
+                    cv2.circle(image, self.face_center, 0, (0, 0, 255), 7)
+
                 # [1] OBJECT TRACKING
                 if ObjectTracking:
                     image = self.track_objects(image)
@@ -479,23 +507,27 @@ class FaceAnalyst:
                     image = self.estimateHeadPose(
                         org_image,
                         image,
-                        abs_x_min,
-                        abs_y_min,
-                        abs_x_max,
-                        abs_y_max,
-                        CalculateAngle=False,
-                        Calculate3Dcoordinates=True,
+                        [abs_x_min, abs_y_min],
+                        [abs_x_max, abs_y_max],
+                        CalculateAngle=True,
+                        Calculate3Dcoordinates=True
                     )
 
                 # [3] FACE IDENTIFICATION
                 if FaceIdentification:
                     image = self.identifyFace(
-                        org_image, image, abs_x_min, abs_y_min,
-                        abs_x_max, abs_y_max
+                        org_image, image,
+                        [abs_x_min, abs_y_min],
+                        [abs_x_max, abs_y_max]
                     )
 
                 # [4] EYE TRACKING
                 if EyeTracking:
-                    image = self.track_eye(eyeTracker)
+                    image = self.track_eyes(
+                        org_image, image,
+                        eyeTracker,
+                        [abs_x_min, abs_y_min],
+                        [abs_x_max, abs_y_max]
+                    )
 
         return image

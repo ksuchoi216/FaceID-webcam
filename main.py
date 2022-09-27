@@ -5,15 +5,6 @@ import warnings
 
 from captureFrames import captureFrames
 
-# CUSTOM
-from modules import FaceAnalyst, EyeTracker
-
-# from modules.utils import *
-
-# import os
-# import sys
-
-
 warnings.filterwarnings("ignore")
 
 
@@ -23,13 +14,7 @@ def main(config):
         config (dict): stored basic setting variables.
         please refer to ./config/config files
     """
-    # faceAnalyst
-    faceAnalyst = FaceAnalyst(config["FaceAnalyst"])
-
-    # EyeTracker
-    eyeTracker = EyeTracker(config["EyeTracker"])
-
-    captureFrames(config["default"], faceAnalyst, eyeTracker)
+    captureFrames(config)
 
 
 def parse_args():
@@ -52,7 +37,6 @@ if __name__ == "__main__":
     with open(path_config) as f:
         config = json.load(f)
 
-    args = parse_args()
-    config["DataAdministrator"]["foldername_newuser"] = args.new_user_name
+    # args = parse_args()
 
     main(config)

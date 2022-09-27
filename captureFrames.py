@@ -1,10 +1,13 @@
 import cv2
 
+from modules import FaceAnalyst, EyeTracker
 
-def captureFrames(config, faceAnalyst, eyeTracker):
+
+def captureFrames(config):
     """
     Args:
-        config (dict): config named "default" config such as config["default"]
+        config (dictctrl y): config named "default"
+        config such as config["default"]
         faceAnalyst (class): this object for analysing images
                   such as object tracking, head pose estimation,
                   face detection, and face recognition.
@@ -13,18 +16,37 @@ def captureFrames(config, faceAnalyst, eyeTracker):
         Exception: if there is no captured image, raise the exception
 
     """
-    print("\nstart video capturing")
+    print("Start video capturing...")
+    IsDrawing = config["Options"]["IsDrawing"]
+    IsHeadPoseEstimation = config["Options"]["IsHeadPoseEstimation"]
+    IsFaceIdentification = config["Options"]["IsFaceIdentification"]
+    IsObjectTracking = config["Options"]["IsObjectTracking"]
+    IsEyeTracking = config["Options"]["IsEyeTracking"]
+    correct_y_range = config["Options"]["correct_y_range"]
 
-    frame_width = config["frame_width"]
-    frame_height = config["frame_height"]
+    # frame_width = config["frame_width"]
+    # frame_height = config["frame_height"]
 
     vc = cv2.VideoCapture(0)
 
-    if not vc.isOpened():
-        raise Exception("Could not open video capture")
-    else:
-        vc.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
-        vc.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
+    # if not vc.isOpened():
+    #     raise Exception("Could not open video capture")
+    # else:
+    #     vc.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
+    #     vc.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
+
+    ret, frame = vc.read()
+    height, width, _ = frame.shape
+
+    # faceAnalyst
+    config["FaceAnalyst"]["correct_y_range"] = correct_y_range
+    faceAnalyst = FaceAnalyst(config["FaceAnalyst"])
+
+    # EyeTracker
+    config["EyeTracker"]["correct_y_range"] = correct_y_range
+    eyeTracker = EyeTracker(config["EyeTracker"],
+                            faceAnalyst.get_single_face_detector(),
+                            frame)
 
     while True:
         ret, frame = vc.read()
@@ -40,13 +62,19 @@ def captureFrames(config, faceAnalyst, eyeTracker):
             cv2.destroyWindow("mac")
             break
 
+        if IsDrawing:
+            cv2.rectangle(frame, (0, correct_y_range[0]),
+                          (width, correct_y_range[1]),
+                          (0, 0, 255), 3)
+
         frame = faceAnalyst.execute_face_application(
             frame,
-            HeadPoseEstimation=False,
-            FaceIdentification=False,
-            ObjectTracking=False,
-            EyeTracking=True,
-            eyeTracker=eyeTracker
+            HeadPoseEstimation=IsHeadPoseEstimation,
+            FaceIdentification=IsFaceIdentification,
+            ObjectTracking=IsObjectTracking,
+            EyeTracking=IsEyeTracking,
+            eyeTracker=eyeTracker,
+            IsDrawing=IsDrawing
         )
 
         cv2.imshow("mac", frame)
