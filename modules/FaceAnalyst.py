@@ -125,6 +125,9 @@ class FaceAnalyst:
 
         self.center_area_size_half = cfg["center_area_size_half"]
         
+        # ===========================================
+        self.ID_card_num = cfg['ID_card_num']
+        
     def get_single_face_detector(self):
         return self.single_face_detector
 
@@ -134,7 +137,8 @@ class FaceAnalyst:
     def identifyFace(
         self, org_image, image,
         start_point,
-        end_point
+        end_point,
+        IsDrawing
     ):
         """
         identification of a detected face taken by the mediapipe face detector
@@ -170,39 +174,47 @@ class FaceAnalyst:
 
         # method about calculation of distances between images
         if face is not None and prob > self.face_prob_threshold1:
-            boxes, _ = self.single_face_detector.detect(org_image)
-            box = boxes[0]
+            # MTCNN face detection
+            # boxes, _ = self.single_face_detector.detect(org_image)
+            # box = boxes[0]
             results = self.face_feature_extractor(face.unsqueeze(0))
             results = torch.sigmoid(results)
             print(f'results: {results}')
-            prob, index = torch.max(results, 1)
-            print(f"prob: {prob} index: {index}")
-
+            # prob, index = torch.max(results, 1)
+            probs, indexs = torch.topk(results, k=2, dim=1)
+            prob = probs[0][0]
+            index = indexs[0][0]
+            diff = probs[0][0]-probs[0][1]
+            
             if prob > self.face_prob_threshold2:
                 # print(self.registered_users[index], prob)
-                # cv2.rectangle(
-                #     image,
-                #     (abs_min_x, abs_min_y),
-                #     (abs_max_x, abs_max_y),
-                #     (255, 0, 0),
-                #     2,
-                # )
+                # rect for Mediapipe face detection
                 cv2.rectangle(
                     image,
-                    (int(box[0]), int(box[1])),
-                    (int(box[2]), int(box[3])),
-                    (0, 255, 80),
+                    (abs_min_x, abs_min_y),
+                    (abs_max_x, abs_max_y),
+                    (255, 0, 0),
                     2,
+                )
+        
+                text_for_faceid = (
+                    f"(name, prob, diff) = "
+                    f"({self.registered_users[index]}, {prob:.3}, {diff:.3})"
                 )
                 cv2.putText(
-                    image,
-                    self.registered_users[index],
-                    (int(box[0]), int(box[1]) - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    1,
-                    (0, 255, 80),
-                    2,
+                    image, text_for_faceid,
+                    (int(abs_min_x)-30, int(abs_min_y-40)),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (226, 181, 0), 2
                 )
+                
+                # rect for MTCNN face detection
+                # cv2.rectangle(
+                #     image,
+                #     (int(box[0]), int(box[1])),
+                #     (int(box[2]), int(box[3])),
+                #     (0, 255, 80),
+                #     2,
+                # )
 
         return image
 
@@ -324,7 +336,7 @@ class FaceAnalyst:
     # ========================================================================================================================
     # [1] OBJECT TRACKING - FUNCTION
     # ------------------------------------------------------------------------------------------------------------------------
-    def track_objects(self, image):
+    def track_objects(self, image, ID_cards, IsDrawing=True):
         """The order of execution for tracking objects is presented as follows:
         1. detection of objects
         2. filtering objects to get only humans
@@ -351,19 +363,21 @@ class FaceAnalyst:
                 int(coords[3]),
             )
             name_idx = int(coords[4])
+            ID_cards[name_idx] = []
             name = "ID: {}".format(str(name_idx))
-
-            image = cv2.rectangle(image, (xmin, ymin), (xmax, ymax),
-                                  (255, 0, 0), 2)
-            image = cv2.putText(
-                image,
-                name,
-                (xmin, ymin - 10),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.9,
-                (255, 0, 0),
-                2,
-            )
+            
+            if IsDrawing:
+                image = cv2.rectangle(image, (xmin, ymin), (xmax, ymax),
+                                    (255, 0, 0), 2)
+                image = cv2.putText(
+                    image,
+                    name,
+                    (xmin, ymin - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.9,
+                    (255, 0, 0),
+                    2,
+                )
 
         return image
 
@@ -436,11 +450,60 @@ class FaceAnalyst:
 
         return x_min, y_min, x_max, y_max
 
+    def draw_basic_info(self, image, start_point, end_point, IsDrawing=True):
+        abs_x_min, abs_y_min = start_point
+        abs_x_max, abs_y_max = end_point
+        
+        self.face_center = (((abs_x_min+abs_x_max)//2),
+                            ((abs_y_min+abs_y_max)//2))
+        # center for face
+        cv2.circle(image, self.face_center, 0, (0, 0, 255), 7)
+        
+        center_line = self.width//2
+        self.IsLeftSeat = self.face_center[0] < center_line
+        # right = self.face_center[0] > (self.width//2)
+        
+        if IsDrawing:
+            if self.IsLeftSeat:
+                cv2.putText(
+                    image, '[1]', (self.width//4, 40),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.9, (0, 255, 0), 3
+                )
+                cv2.rectangle(
+                    image,
+                    (0, 0),
+                    (center_line, self.height),
+                    (0, 255, 0), 6
+                )
+            else:
+                cv2.putText(
+                    image, '[0]', ((self.width//4)*3, 40),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.9, (255, 0, 0), 3
+                )                        
+                cv2.rectangle(
+                    image,
+                    (center_line, 0),
+                    (self.width, self.height),
+                    (0, 255, 0), 6
+                )
+            
+            # rectangle for face
+            cv2.rectangle(
+                image,
+                (abs_x_min, abs_y_min),
+                (abs_x_max, abs_y_max),
+                (0, 255, 0), 3
+            )
+        return image
+
     def execute_face_application(
         self,
         frame,
         HeadPoseEstimation=False,
         FaceIdentification=False,
+        ID_cards=None,
         ObjectTracking=False,
         EyeTracking=True,
         eyeTracker=None,
@@ -493,14 +556,16 @@ class FaceAnalyst:
                 except BaseException:
                     continue
 
-                if IsDrawing:
-                    self.face_center = (((abs_x_min+abs_x_max)//2),
-                                        ((abs_y_min+abs_y_max)//2))
-                    cv2.circle(image, self.face_center, 0, (0, 0, 255), 7)
-
+                image = self.draw_basic_info(
+                    image,
+                    [abs_x_min, abs_y_min],
+                    [abs_x_max, abs_y_max],
+                    IsDrawing=IsDrawing["basic_info"]
+                )
+ 
                 # [1] OBJECT TRACKING
                 if ObjectTracking:
-                    image = self.track_objects(image)
+                    image = self.track_objects(image, ID_cards)
 
                 # [2] HEAD POSE ESTIMATION
                 if HeadPoseEstimation:
@@ -518,7 +583,8 @@ class FaceAnalyst:
                     image = self.identifyFace(
                         org_image, image,
                         [abs_x_min, abs_y_min],
-                        [abs_x_max, abs_y_max]
+                        [abs_x_max, abs_y_max],
+                        IsDrawing
                     )
 
                 # [4] EYE TRACKING

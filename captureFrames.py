@@ -17,7 +17,7 @@ def captureFrames(config):
 
     """
     print("Start video capturing...")
-    IsDrawing = config["Options"]["IsDrawing"]
+    IsDrawing = config["IsDrawing"]
     IsHeadPoseEstimation = config["Options"]["IsHeadPoseEstimation"]
     IsFaceIdentification = config["Options"]["IsFaceIdentification"]
     IsObjectTracking = config["Options"]["IsObjectTracking"]
@@ -48,6 +48,7 @@ def captureFrames(config):
                             faceAnalyst.get_single_face_detector(),
                             frame)
 
+    ID_cards = {}
     while True:
         ret, frame = vc.read()
         # check whether a frame is captured or not
@@ -62,7 +63,7 @@ def captureFrames(config):
             cv2.destroyWindow("mac")
             break
 
-        if IsDrawing:
+        if IsDrawing['EyeTracking'] and IsEyeTracking:
             cv2.rectangle(frame, (0, correct_y_range[0]),
                           (width, correct_y_range[1]),
                           (0, 0, 255), 3)
@@ -71,6 +72,7 @@ def captureFrames(config):
             frame,
             HeadPoseEstimation=IsHeadPoseEstimation,
             FaceIdentification=IsFaceIdentification,
+            ID_cards=ID_cards,
             ObjectTracking=IsObjectTracking,
             EyeTracking=IsEyeTracking,
             eyeTracker=eyeTracker,

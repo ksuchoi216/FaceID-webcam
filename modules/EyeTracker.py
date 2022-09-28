@@ -53,8 +53,18 @@ class EyeTracker(object):
                                              self.correct_coords)
 
         # =====================================================================
+        PREDICTOR_PATH = os.path.join(
+            "./modules/external_library/HeadPoseEstimation/models/",
+            "shape_predictor_68_face_landmarks.dat",
+        )
+        
+        if not os.path.isfile(PREDICTOR_PATH):
+            print("PREDICTOR_PATH: ", PREDICTOR_PATH)
+            print("[ERROR] USE models/downloader.sh to download the predictor")
+            sys.exit()
+            
         self.landmark_predictor = dlib.shape_predictor(
-            './shape_predictor_68_face_landmarks.dat'
+            PREDICTOR_PATH
             )
 
         left = [36, 37, 38, 39, 40, 41]
@@ -98,11 +108,15 @@ class EyeTracker(object):
         shape_for_eyes = np.array(shape[36:48])
         eyes_center = np.mean(shape_for_eyes, axis=0, dtype=np.int16)
         diff_coords = self.get_diff_from_eyes_center(eyes_center)
-        text = f'diff_coords: {diff_coords}'
+        # text = f'diff_coords: {diff_coords}'
 
         min_correction = eyes_center[1] < self.correct_y_range[1]
         max_correction = eyes_center[1] > self.correct_y_range[0]
+        correct_y = (self.correct_y_range[0]+self.correct_y_range[1])/2
         IsEyesInArea = min_correction and max_correction
+        
+        diff_y = eyes_center[1] - correct_y
+        text = f'diff_y: {diff_y:4}'
 
         if IsDrawing:
             for (x, y) in shape_for_eyes:
@@ -110,14 +124,14 @@ class EyeTracker(object):
                 cv2.circle(image, (x, y), 2, (0, 255, 0), 2)
             # print(f'eyes center: {eyes_center}')
             cv2.circle(image, eyes_center, 2, (255, 0, 0), 2)
-
+            
             cv2.putText(
                 image,
                 text,
                 (20, 40),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.9,
-                (255, 0, 0),
+                (0, 255, 0),
                 2,
             )
 

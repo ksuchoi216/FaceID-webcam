@@ -2,12 +2,18 @@
   "frame_width": 1000,
   "frame_height": 1000,
   "Options": {
-    "IsDrawing": true,
     "IsHeadPoseEstimation": false,
     "IsFaceIdentification": false,
     "IsObjectTracking": false,
     "IsEyeTracking": true,
     "correct_y_range": [100, 200]
+  },
+  "IsDrawing": {
+    "basic_info": false,
+    "HeadPoseEstimation": false,
+    "FaceIdentification": false,
+    "ObjectTracking": false,
+    "EyeTracking": true
   },
   "DataAdministrator":{
     "filepath_image_folder": "./data/photos/",
@@ -19,7 +25,7 @@
   },
   "FaceAnalyst":{
     "registered_users":["jhyoo", "jhoh", "jhongyoo", "kschoi"],
-    "face_prob_threshold1": 0.92,
+    "face_prob_threshold1": 0.7,
     "face_prob_threshold2": 0.9,
     "face_dist_threshold": 2,
     "focal": 1.0,
@@ -30,7 +36,8 @@
       "path_for_pretrained_model": "./data/face-extraction-model.pt",
       "pretrained": "vggface2",
       "classify": true
-    }
+    },
+    "ID_card_num": 5
   },
   "EyeTracker":{
     "folder_for_preset_images": "./data/preset_images/",
