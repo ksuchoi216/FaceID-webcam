@@ -9,7 +9,7 @@
     "correct_y_range": [100, 200]
   },
   "IsDrawing": {
-    "basic_info": true,
+    "basic_info": false,
     "HeadPoseEstimation": false,
     "FaceIdentification": false,
     "ObjectTracking": false,
