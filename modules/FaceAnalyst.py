@@ -2,9 +2,12 @@ import os
 import sys
 
 import numpy as np
-import torch
 import cv2
 from PIL import Image
+import torch
+import torch.nn.functional as F
+from torchvision import datasets
+from torch.utils.data import DataLoader
 from torchvision import transforms
 import dlib
 import mediapipe as mp
@@ -20,8 +23,7 @@ def calculateDistance(A, B):
 
 
 def calculateSimilarity(A, B):
-    cos = torch.nn.CosineSimilarity(dim=1)
-    return cos(A, B).item()
+    return F.cosine_similarity(A, B).item()
 
 
 class FaceAnalyst:
@@ -128,6 +130,30 @@ class FaceAnalyst:
         # ===========================================
         self.ID_card_num = cfg['ID_card_num']
         
+        # ===========================================
+        cfg_dist = cfg["distance_mode"]
+        self.IsDistanceMode = cfg_dist['IsDistanceMode']
+        if self.IsDistanceMode:
+            self.IsCosSimilarity = cfg_dist['IsCosSimilarity']
+            path_ = cfg_dist['filepath_photos']
+            print(f'loading registered photos from {path_}')
+            dataset = datasets.ImageFolder(path_)
+            idx_to_class = {i: c for c, i in dataset.class_to_idx.items()}
+                            
+            def collate_fn(x):
+                return x[0]
+
+            dataloader = DataLoader(dataset, collate_fn=collate_fn)
+            self.name_list = []
+            self.embedding_list = []
+            
+            for img, idx in dataloader:
+                face, prob = self.single_face_detector(img, return_prob=True)
+                if face is not None and prob > self.face_prob_threshold1:
+                    emb = self.face_feature_extractor(face.unsqueeze(0))
+                    self.embedding_list.append(emb.detach())
+                    self.name_list.append(idx_to_class[idx])
+        
     def get_single_face_detector(self):
         return self.single_face_detector
 
@@ -177,14 +203,40 @@ class FaceAnalyst:
             # MTCNN face detection
             # boxes, _ = self.single_face_detector.detect(org_image)
             # box = boxes[0]
-            results = self.face_feature_extractor(face.unsqueeze(0))
-            results = torch.sigmoid(results)
-            print(f'results: {results}')
-            # prob, index = torch.max(results, 1)
-            probs, indexs = torch.topk(results, k=2, dim=1)
-            prob = probs[0][0]
-            index = indexs[0][0]
-            diff = probs[0][0]-probs[0][1]
+            if self.IsDistanceMode:
+                emb = self.face_feature_extractor(face.unsqueeze(0)).detach()
+                dist_list = []
+                
+                for idx, emb_db in enumerate(self.embedding_list):
+                    if self.IsCosSimilarity:
+                        dist = calculateSimilarity(emb, emb_db)
+                    else:
+                        dist = calculateDistance(emb, emb_db)
+                    
+                    dist_list.append(round(dist, 3))
+                
+                if self.IsCosSimilarity:
+                    target_dist = max(dist_list)
+                else:
+                    target_dist = min(dist_list)
+
+                print(f'dist_list result: {dist_list}')
+                    
+                target_idx = dist_list.index(target_dist)
+                name = self.name_list[target_idx]
+                res = target_dist
+                
+            else:
+                results = self.face_feature_extractor(face.unsqueeze(0))
+                results = torch.sigmoid(results)
+                print(f'results: {results}')
+                # prob, index = torch.max(results, 1)
+                probs, indexs = torch.topk(results, k=2, dim=1)
+                prob = probs[0][0]
+                index = indexs[0][0]
+                res = prob
+                # diff = probs[0][0]-probs[0][1]
+                name = self.registered_users[index]
             
             if prob > self.face_prob_threshold2:
                 # print(self.registered_users[index], prob)
@@ -198,8 +250,8 @@ class FaceAnalyst:
                 )
         
                 text_for_faceid = (
-                    f"(name, prob, diff) = "
-                    f"({self.registered_users[index]}, {prob:.3}, {diff:.3})"
+                    f"(name, prob) = "
+                    f"({name}, {res:.3})"
                 )
                 cv2.putText(
                     image, text_for_faceid,

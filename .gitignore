@@ -138,7 +138,6 @@ dmypy.json
 
 
 # custom settings
-/data/photos/
 /data/test/
 /data/data.pt
 /modules/external_library/facenet_pytorch/
