@@ -3,7 +3,7 @@ import sys
 
 import numpy as np
 import cv2
-from PIL import Image
+from PIL import Image, ImageDraw
 import torch
 import torch.nn.functional as F
 from torchvision import datasets
@@ -34,6 +34,15 @@ class FaceAnalyst:
             sscfg (dict): "config file only for FaceAnalyst
                     such as config["FaceAnlyst"]
         """
+
+        IsHeadPoseEstimation = config["Options"]["IsHeadPoseEstimation"]
+        IsFaceIdentification = config["Options"]["IsFaceIdentification"]
+        IsObjectTracking = config["Options"]["IsObjectTracking"]
+        IsEyeTracking = config["Options"]["IsEyeTracking"]
+        correct_y_range = config["Options"]["correct_y_range"]
+        IsVideoTest = config["Options"]["IsVideoTest"]
+        path_for_video = config["Options"]["path_for_video"]
+
         self.correct_y_range = cfg["correct_y_range"]
         self.registered_users = cfg["registered_users"]
         num_classes = len(self.registered_users)
@@ -98,7 +107,7 @@ class FaceAnalyst:
             mp.solutions.drawing_utils
         )  # drawing face landmarks by using mediapipe
         self.face_detection = self.mp_face_detection.FaceDetection(
-            min_detection_confidence=0.5
+            min_detection_confidence=cfg['min_detection_confidence']
         )
 
         # related to head pose estimation
@@ -126,10 +135,10 @@ class FaceAnalyst:
         )  # model to be loaded for tracking object(multiple objects tracking)
 
         self.center_area_size_half = cfg["center_area_size_half"]
-        
+
         # ===========================================
         self.ID_card_num = cfg['ID_card_num']
-        
+
         # ===========================================
         cfg_dist = cfg["distance_mode"]
         self.IsDistanceMode = cfg_dist['IsDistanceMode']
@@ -139,21 +148,21 @@ class FaceAnalyst:
             print(f'loading registered photos from {path_}')
             dataset = datasets.ImageFolder(path_)
             idx_to_class = {i: c for c, i in dataset.class_to_idx.items()}
-                            
+
             def collate_fn(x):
                 return x[0]
 
             dataloader = DataLoader(dataset, collate_fn=collate_fn)
             self.name_list = []
             self.embedding_list = []
-            
+
             for img, idx in dataloader:
                 face, prob = self.single_face_detector(img, return_prob=True)
                 if face is not None and prob > self.face_prob_threshold1:
                     emb = self.face_feature_extractor(face.unsqueeze(0))
                     self.embedding_list.append(emb.detach())
                     self.name_list.append(idx_to_class[idx])
-        
+
     def get_single_face_detector(self):
         return self.single_face_detector
 
@@ -201,31 +210,34 @@ class FaceAnalyst:
         # method about calculation of distances between images
         if face is not None and prob > self.face_prob_threshold1:
             # MTCNN face detection
-            # boxes, _ = self.single_face_detector.detect(org_image)
-            # box = boxes[0]
+            boxes, _ = self.single_face_detector.detect(org_image)
+            draw = ImageDraw.Draw(image)
+            for box in boxes:
+                draw.rectangle(box.tolist(), outline=(0, 0, 255), width=6)
+
             if self.IsDistanceMode:
                 emb = self.face_feature_extractor(face.unsqueeze(0)).detach()
                 dist_list = []
-                
+
                 for idx, emb_db in enumerate(self.embedding_list):
                     if self.IsCosSimilarity:
                         dist = calculateSimilarity(emb, emb_db)
                     else:
                         dist = calculateDistance(emb, emb_db)
-                    
+
                     dist_list.append(round(dist, 3))
-                
+
                 if self.IsCosSimilarity:
                     target_dist = max(dist_list)
                 else:
                     target_dist = min(dist_list)
 
                 print(f'dist_list result: {dist_list}')
-                    
+
                 target_idx = dist_list.index(target_dist)
                 name = self.name_list[target_idx]
                 res = target_dist
-                
+
             else:
                 results = self.face_feature_extractor(face.unsqueeze(0))
                 results = torch.sigmoid(results)
@@ -237,7 +249,7 @@ class FaceAnalyst:
                 res = prob
                 # diff = probs[0][0]-probs[0][1]
                 name = self.registered_users[index]
-            
+
             if prob > self.face_prob_threshold2:
                 # print(self.registered_users[index], prob)
                 # rect for Mediapipe face detection
@@ -248,7 +260,7 @@ class FaceAnalyst:
                     (255, 0, 0),
                     2,
                 )
-        
+
                 text_for_faceid = (
                     f"(name, prob) = "
                     f"({name}, {res:.3})"
@@ -258,7 +270,7 @@ class FaceAnalyst:
                     (int(abs_min_x)-30, int(abs_min_y-40)),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (226, 181, 0), 2
                 )
-                
+
                 # rect for MTCNN face detection
                 # cv2.rectangle(
                 #     image,
@@ -285,7 +297,6 @@ class FaceAnalyst:
         Calculate3Dcoordinates=False,
     ):
         """calculation for the angle of detected face's head
-
         Args:
             org_image (BGR image): BGR image taken by OpenCV
             image (BGR image): ditto
@@ -417,10 +428,10 @@ class FaceAnalyst:
             name_idx = int(coords[4])
             ID_cards[name_idx] = []
             name = "ID: {}".format(str(name_idx))
-            
+
             if IsDrawing:
                 image = cv2.rectangle(image, (xmin, ymin), (xmax, ymax),
-                                    (255, 0, 0), 2)
+                                      (255, 0, 0), 2)
                 image = cv2.putText(
                     image,
                     name,
@@ -505,42 +516,42 @@ class FaceAnalyst:
     def draw_basic_info(self, image, start_point, end_point, IsDrawing=True):
         abs_x_min, abs_y_min = start_point
         abs_x_max, abs_y_max = end_point
-        
+
         self.face_center = (((abs_x_min+abs_x_max)//2),
                             ((abs_y_min+abs_y_max)//2))
         # center for face
         cv2.circle(image, self.face_center, 0, (0, 0, 255), 7)
-        
+
         center_line = self.width//2
         self.IsLeftSeat = self.face_center[0] < center_line
         # right = self.face_center[0] > (self.width//2)
-        
+
         if IsDrawing:
-            if self.IsLeftSeat:
-                cv2.putText(
-                    image, '[1]', (self.width//4, 40),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.9, (0, 255, 0), 3
-                )
-                cv2.rectangle(
-                    image,
-                    (0, 0),
-                    (center_line, self.height),
-                    (0, 255, 0), 6
-                )
-            else:
-                cv2.putText(
-                    image, '[0]', ((self.width//4)*3, 40),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.9, (255, 0, 0), 3
-                )                        
-                cv2.rectangle(
-                    image,
-                    (center_line, 0),
-                    (self.width, self.height),
-                    (0, 255, 0), 6
-                )
-            
+            # if self.IsLeftSeat:
+            #     cv2.putText(
+            #         image, '[1]', (self.width//4, 40),
+            #         cv2.FONT_HERSHEY_SIMPLEX,
+            #         0.9, (0, 255, 0), 3
+            #     )
+            #     cv2.rectangle(
+            #         image,
+            #         (0, 0),
+            #         (center_line, self.height),
+            #         (0, 255, 0), 6
+            #     )
+            # else:
+            #     cv2.putText(
+            #         image, '[0]', ((self.width//4)*3, 40),
+            #         cv2.FONT_HERSHEY_SIMPLEX,
+            #         0.9, (255, 0, 0), 3
+            #     )
+            #     cv2.rectangle(
+            #         image,
+            #         (center_line, 0),
+            #         (self.width, self.height),
+            #         (0, 255, 0), 6
+            #     )
+
             # rectangle for face
             cv2.rectangle(
                 image,
@@ -588,8 +599,8 @@ class FaceAnalyst:
         if results.detections:
             for detection in results.detections:
                 x_min, y_min, x_max, y_max = self.ConvertToCoordinate(
-                  detection
-                  )
+                    detection
+                )
 
                 # if there is None return, continue this loop
                 try:
@@ -614,7 +625,7 @@ class FaceAnalyst:
                     [abs_x_max, abs_y_max],
                     IsDrawing=IsDrawing["basic_info"]
                 )
- 
+
                 # [1] OBJECT TRACKING
                 if ObjectTracking:
                     image = self.track_objects(image, ID_cards)

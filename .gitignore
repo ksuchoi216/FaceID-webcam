@@ -140,6 +140,8 @@ dmypy.json
 # custom settings
 /data/test/
 /data/data.pt
+/data/video_dimension/
+/data/video_resolution/
 /modules/external_library/facenet_pytorch/
 /modules/external_library/HeadPoseEstimation/
 

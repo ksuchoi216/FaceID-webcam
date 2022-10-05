@@ -23,11 +23,17 @@ def captureFrames(config):
     IsObjectTracking = config["Options"]["IsObjectTracking"]
     IsEyeTracking = config["Options"]["IsEyeTracking"]
     correct_y_range = config["Options"]["correct_y_range"]
-
+    IsVideoTest = config["Options"]["IsVideoTest"]
+    path_for_video = config["Options"]["path_for_video"]
     # frame_width = config["frame_width"]
     # frame_height = config["frame_height"]
 
-    vc = cv2.VideoCapture(0)
+    if IsVideoTest:
+        input_video = path_for_video
+    else:
+        input_video = 0
+
+    vc = cv2.VideoCapture(input_video)
 
     # if not vc.isOpened():
     #     raise Exception("Could not open video capture")
@@ -39,7 +45,7 @@ def captureFrames(config):
     height, width, _ = frame.shape
 
     # faceAnalyst
-    config["FaceAnalyst"]["correct_y_range"] = correct_y_range
+    config["FaceAnalyst"]["Options"] = config["Options"]
     faceAnalyst = FaceAnalyst(config["FaceAnalyst"])
 
     # EyeTracker

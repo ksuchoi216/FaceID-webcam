@@ -1,15 +1,15 @@
 {
-  "frame_width": 1000,
-  "frame_height": 1000,
   "Options": {
     "IsHeadPoseEstimation": false,
-    "IsFaceIdentification": false,
+    "IsFaceIdentification": true,
     "IsObjectTracking": false,
     "IsEyeTracking": true,
-    "correct_y_range": [100, 200]
+    "correct_y_range": [100, 200],
+    "IsVideoTest": false,
+    "path_for_video": "./data/video_dimension/video_dimension_test_macbook.mov"
   },
   "IsDrawing": {
-    "basic_info": false,
+    "basic_info": true,
     "HeadPoseEstimation": false,
     "FaceIdentification": false,
     "ObjectTracking": false,
@@ -28,6 +28,7 @@
     "face_prob_threshold1": 0.7,
     "face_prob_threshold2": 0.7,
     "face_dist_threshold": 2,
+    "min_detection_confidence": 0.3,
     "focal": 1.0,
     "center_area_size_half": 130,
     "model": {
@@ -41,7 +42,7 @@
     "distance_mode":{
       "IsDistanceMode": true,
       "filepath_photos": "./data/photos/",
-      "IsCosSimilarity": false
+      "IsCosSimilarity": true
     }
   },
   "EyeTracker":{
