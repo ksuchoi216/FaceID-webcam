@@ -1,7 +1,7 @@
 {
   "Options": {
     "IsHeadPoseEstimation": false,
-    "IsFaceIdentification": true,
+    "IsFaceIdentification": false,
     "IsObjectTracking": false,
     "IsEyeTracking": true,
     "correct_y_range": [100, 200],
@@ -9,7 +9,7 @@
     "path_for_video": "./data/video_dimension/video_dimension_test_macbook.mov"
   },
   "IsDrawing": {
-    "basic_info": true,
+    "basic_info": false,
     "HeadPoseEstimation": false,
     "FaceIdentification": false,
     "ObjectTracking": false,

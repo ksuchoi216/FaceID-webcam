@@ -54,7 +54,6 @@ def captureFrames(config):
                             faceAnalyst.get_single_face_detector(),
                             frame)
 
-    ID_cards = {}
     while True:
         ret, frame = vc.read()
         # check whether a frame is captured or not
@@ -78,7 +77,6 @@ def captureFrames(config):
             frame,
             HeadPoseEstimation=IsHeadPoseEstimation,
             FaceIdentification=IsFaceIdentification,
-            ID_cards=ID_cards,
             ObjectTracking=IsObjectTracking,
             EyeTracking=IsEyeTracking,
             eyeTracker=eyeTracker,

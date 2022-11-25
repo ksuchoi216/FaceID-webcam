@@ -35,15 +35,14 @@ class FaceAnalyst:
                     such as config["FaceAnlyst"]
         """
 
-        IsHeadPoseEstimation = config["Options"]["IsHeadPoseEstimation"]
-        IsFaceIdentification = config["Options"]["IsFaceIdentification"]
-        IsObjectTracking = config["Options"]["IsObjectTracking"]
-        IsEyeTracking = config["Options"]["IsEyeTracking"]
-        correct_y_range = config["Options"]["correct_y_range"]
-        IsVideoTest = config["Options"]["IsVideoTest"]
-        path_for_video = config["Options"]["path_for_video"]
+        IsHeadPoseEstimation = cfg["Options"]["IsHeadPoseEstimation"]
+        IsFaceIdentification = cfg["Options"]["IsFaceIdentification"]
+        IsObjectTracking = cfg["Options"]["IsObjectTracking"]
+        IsEyeTracking = cfg["Options"]["IsEyeTracking"]
+        IsVideoTest = cfg["Options"]["IsVideoTest"]
+        path_for_video = cfg["Options"]["path_for_video"]
 
-        self.correct_y_range = cfg["correct_y_range"]
+        self.correct_y_range = cfg["Options"]["correct_y_range"]
         self.registered_users = cfg["registered_users"]
         num_classes = len(self.registered_users)
         cfg_m = cfg["model"]
