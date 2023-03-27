@@ -1,19 +1,19 @@
 {
   "Options": {
     "IsHeadPoseEstimation": false,
-    "IsFaceIdentification": false,
+    "IsFaceIdentification": true,
     "IsObjectTracking": false,
-    "IsEyeTracking": true,
+    "IsEyeTracking": false,
     "correct_y_range": [100, 200],
     "IsVideoTest": false,
     "path_for_video": "./data/video_dimension/video_dimension_test_macbook.mov"
   },
   "IsDrawing": {
-    "basic_info": false,
+    "basic_info": true,
     "HeadPoseEstimation": false,
-    "FaceIdentification": false,
+    "FaceIdentification": true,
     "ObjectTracking": false,
-    "EyeTracking": true
+    "EyeTracking": false
   },
   "DataAdministrator":{
     "filepath_image_folder": "./data/photos/",

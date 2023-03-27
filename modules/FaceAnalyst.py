@@ -210,7 +210,7 @@ class FaceAnalyst:
         if face is not None and prob > self.face_prob_threshold1:
             # MTCNN face detection
             boxes, _ = self.single_face_detector.detect(org_image)
-            draw = ImageDraw.Draw(image)
+            draw = ImageDraw.Draw(Image.fromarray(image))
             for box in boxes:
                 draw.rectangle(box.tolist(), outline=(0, 0, 255), width=6)
 
